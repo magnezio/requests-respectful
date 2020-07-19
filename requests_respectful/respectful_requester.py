@@ -32,7 +32,7 @@ class RespectfulRequester:
     def redis_prefix(self):
         return "RespectfulRequester"
 
-    def request(self, request_func, realm=None, realms=None, wait=False, wait_max_reties=None, wait_sleep_timeout=1):
+    def request(self, request_func, realm=None, realms=None, wait=False, wait_max_retries=None, wait_sleep_timeout=1):
         if realm is not None:
             warnings.warn("'realm' kwarg will be removed in favor of providing a 'realms' list starting in 0.3.0", DeprecationWarning)
             realms = [realm]
