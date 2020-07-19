@@ -1,5 +1,5 @@
 from .globals import default_config, config, redis
-from .exceptions import RequestsRespectfulError, RequestsRespectfulConfigError, RequestsRespectfulRateLimitedError, RequestsRespectfulRedisError
+from .exceptions import RequestsRespectfulError, RequestsRespectfulConfigError, RequestsRespectfulRateLimitedError, RequestsRespectfulRedisError, RequestsRespectfulWaitMaxRetriesExceeded
 
 from redis import StrictRedis, ConnectionError
 
@@ -32,7 +32,7 @@ class RespectfulRequester:
     def redis_prefix(self):
         return "RespectfulRequester"
 
-    def request(self, request_func, realm=None, realms=None, wait=False):
+    def request(self, request_func, realm=None, realms=None, wait=False, wait_max_reties=None, wait_sleep_timeout=1):
         if realm is not None:
             warnings.warn("'realm' kwarg will be removed in favor of providing a 'realms' list starting in 0.3.0", DeprecationWarning)
             realms = [realm]
@@ -44,13 +44,18 @@ class RespectfulRequester:
                 raise RequestsRespectfulError("Realm '%s' hasn't been registered" % realm)
 
         if wait:
+            i = 0
             while True:
+                i += 1
+                if wait_max_retries and i > wait_max_reties:
+                    raise RequestsRespectfulWaitMaxRetriesExceeded
+
                 try:
                     return self._perform_request(request_func, realms=realms)
                 except RequestsRespectfulRateLimitedError:
                     pass
 
-                time.sleep(1)
+                time.sleep(wait_sleep_timeout)
         else:
             return self._perform_request(request_func, realms=realms)
 

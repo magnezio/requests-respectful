@@ -13,3 +13,8 @@ class RequestsRespectfulConfigError(Exception):
 
 class RequestsRespectfulRedisError(Exception):
     pass
+
+
+class RequestsRespectfulWaitMaxRetriesExceeded(Exception):
+    pass
+
