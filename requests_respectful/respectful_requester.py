@@ -191,7 +191,7 @@ class RespectfulRequester:
 
     def _requests_in_timespan(self, realm):
         return len(
-            self.redis.scan_iter(
+            self.redis.scan(
                 cursor=0,
                 match="%s:REQUEST:%s:*" % (self.redis_prefix, realm),
                 count=self._redis_keys_in_db() + 100
