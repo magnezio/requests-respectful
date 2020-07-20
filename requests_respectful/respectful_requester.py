@@ -32,7 +32,7 @@ class RespectfulRequester:
     def redis_prefix(self):
         return "RespectfulRequester"
 
-    def request(self, request_func, realm=None, realms=None, wait=False, wait_max_retries=None, wait_sleep_timeout=1):
+    def request(self, request_func, realm=None, realms=None, wait=False, wait_max_retries=None, wait_sleep_timeout=1, skip_validation=False):
         if realm is not None:
             warnings.warn("'realm' kwarg will be removed in favor of providing a 'realms' list starting in 0.3.0", DeprecationWarning)
             realms = [realm]
@@ -51,13 +51,13 @@ class RespectfulRequester:
                     raise RequestsRespectfulWaitMaxRetriesExceeded
 
                 try:
-                    return self._perform_request(request_func, realms=realms)
+                    return self._perform_request(request_func, realms=realms, skip_validation=skip_validation)
                 except RequestsRespectfulRateLimitedError:
                     pass
 
                 time.sleep(wait_sleep_timeout)
         else:
-            return self._perform_request(request_func, realms=realms)
+            return self._perform_request(request_func, realms=realms, skip_validation=skip_validation)
 
     def fetch_registered_realms(self):
         return list(map(lambda k: k.decode("utf-8"), self.redis.smembers("%s:REALMS" % self.redis_prefix)))
@@ -159,8 +159,9 @@ class RespectfulRequester:
 
         return config
 
-    def _perform_request(self, request_func, realms=None):
-        self._validate_request_func(request_func)
+    def _perform_request(self, request_func, realms=None, skip_validation=False):
+        if not skip_validation:
+            self._validate_request_func(request_func)
 
         rate_limited_realms = list()
 
@@ -246,8 +247,8 @@ class RespectfulRequester:
         request_func_string = inspect.getsource(request_func)
         post_lambda_string = request_func_string.split(":")[1].strip()
 
-        # if not post_lambda_string.startswith(config["requests_module_name"]) and not post_lambda_string.startswith("getattr(requests"):
-        #    raise RequestsRespectfulError("The request lambda can only contain a requests function call")
+        if not post_lambda_string.startswith(config["requests_module_name"]) and not post_lambda_string.startswith("getattr(requests"):
+           raise RequestsRespectfulError("The request lambda can only contain a requests function call")
 
     @staticmethod
     def _config():
