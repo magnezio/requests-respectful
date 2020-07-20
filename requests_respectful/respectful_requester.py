@@ -47,7 +47,7 @@ class RespectfulRequester:
             i = 0
             while True:
                 i += 1
-                if wait_max_retries and i > wait_max_reties:
+                if wait_max_retries and i > wait_max_retries:
                     raise RequestsRespectfulWaitMaxRetriesExceeded
 
                 try:
