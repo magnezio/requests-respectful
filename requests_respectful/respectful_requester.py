@@ -1,4 +1,4 @@
-from .globals import default_config, config, redis
+from .globals import default_config, config
 from .exceptions import RequestsRespectfulError, RequestsRespectfulConfigError, RequestsRespectfulRateLimitedError, RequestsRespectfulRedisError, RequestsRespectfulWaitMaxRetriesExceeded
 
 from redis import StrictRedis, ConnectionError
@@ -15,7 +15,14 @@ import warnings
 class RespectfulRequester:
 
     def __init__(self):
-        self.redis = redis
+        if type(config["redis"]) == StrictRedis:
+            self.redis = config["redis"]
+        else:
+            self.redis = StrictRedis(
+                host=config["redis"]["host"],
+                port=config["redis"]["port"],
+                password=config["redis"]["password"],
+                db=config["redis"]["database"])
 
         try:
             self.redis.echo("Testing Connection")
@@ -113,30 +120,25 @@ class RespectfulRequester:
     @classmethod
     def configure(cls, **kwargs):
         if "redis" in kwargs:
-            if type(kwargs["redis"]) != dict:
+            if type(kwargs["redis"]) == dict:
+                expected_redis_keys = ["host", "port", "database"]
+                missing_redis_keys = list()
+
+                for expected_redis_key in expected_redis_keys:
+                    if expected_redis_key not in kwargs["redis"]:
+                        missing_redis_keys.append(expected_redis_key)
+
+                if len(missing_redis_keys):
+                    raise RequestsRespectfulConfigError("'%s' %s missing from the 'redis' configuration key" % (
+                        ", ".join(missing_redis_keys),
+                        "is" if len(missing_redis_keys) == 1 else "are"
+                    ))
+            elif type(kwargs["redis"] == StrictRedis):
+                pass
+            else:
                 raise RequestsRespectfulConfigError("'redis' key must be a dict")
 
-            expected_redis_keys = ["host", "port", "database"]
-            missing_redis_keys = list()
-
-            for expected_redis_key in expected_redis_keys:
-                if expected_redis_key not in kwargs["redis"]:
-                    missing_redis_keys.append(expected_redis_key)
-
-            if len(missing_redis_keys):
-                raise RequestsRespectfulConfigError("'%s' %s missing from the 'redis' configuration key" % (
-                    ", ".join(missing_redis_keys),
-                    "is" if len(missing_redis_keys) == 1 else "are"
-                ))
-
             config["redis"] = kwargs["redis"]
-
-            global redis
-            redis = StrictRedis(
-                host=config["redis"]["host"],
-                port=config["redis"]["port"],
-                db=config["redis"]["database"]
-            )
 
         if "safety_threshold" in kwargs:
             if type(kwargs["safety_threshold"]) != int or kwargs["safety_threshold"] < 0:
