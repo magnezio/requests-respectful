@@ -15,8 +15,11 @@ import warnings
 class RespectfulRequester:
 
     def __init__(self):
-        if type(config["redis"]) == StrictRedis:
+        self.need_decode = True
+
+        if type(config["redis"]) == redis.client.Redis:
             self.redis = config["redis"]
+            self.need_decode = not self.redis.connection_pool.connection_kwargs['decode_responses']
         else:
             self.redis = StrictRedis(
                 host=config["redis"]["host"],
@@ -33,6 +36,9 @@ class RespectfulRequester:
             return getattr(self, "_requests_proxy_%s" % attr)
         else:
             raise AttributeError()
+
+    def _decode_response(self, resp):
+        return resp.decode('utf-8') if self.need_decode else resp
 
     @property
     def redis_prefix(self):
@@ -66,7 +72,7 @@ class RespectfulRequester:
             return self._perform_request(request_func, realms=realms, skip_validation=skip_validation)
 
     def fetch_registered_realms(self):
-        return list(map(lambda k: k.decode("utf-8"), self.redis.smembers("%s:REALMS" % self.redis_prefix)))
+        return list(map(lambda k: self._decode_response(k), self.redis.smembers("%s:REALMS" % self.redis_prefix)))
 
     def register_realm(self, realm, max_requests, timespan):
         redis_key = self._realm_redis_key(realm)
@@ -110,11 +116,11 @@ class RespectfulRequester:
 
     def realm_max_requests(self, realm):
         realm_info = self._fetch_realm_info(realm)
-        return int(realm_info["max_requests".encode("utf-8")].decode("utf-8"))
+        return int(self._decode_response(realm_info["max_requests".encode("utf-8")]))
 
     def realm_timespan(self, realm):
         realm_info = self._fetch_realm_info(realm)
-        return int(realm_info["timespan".encode("utf-8")].decode("utf-8"))
+        return int(self._decode_response(realm_info["timespan".encode("utf-8")]))
 
     @classmethod
     def configure(cls, **kwargs):
