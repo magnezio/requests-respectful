@@ -44,6 +44,9 @@ class RespectfulRequester:
     def _decode_response(self, resp):
         return resp.decode('utf-8') if self.need_decode else resp
 
+    def _encode_value(self, value):
+        return value.encode('utf-8') if self.need_decode else value
+
     @property
     def redis_prefix(self):
         return "RespectfulRequester"
@@ -120,11 +123,11 @@ class RespectfulRequester:
 
     def realm_max_requests(self, realm):
         realm_info = self._fetch_realm_info(realm)
-        return int(self._decode_response(realm_info["max_requests".encode("utf-8")]))
+        return int(self._decode_response(realm_info[self._encode_value("max_requests")]))
 
     def realm_timespan(self, realm):
         realm_info = self._fetch_realm_info(realm)
-        return int(self._decode_response(realm_info["timespan".encode("utf-8")]))
+        return int(self._decode_response(realm_info[self._encode_value("timespan")]))
 
     @classmethod
     def configure(cls, **kwargs):
