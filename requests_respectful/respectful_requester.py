@@ -18,7 +18,7 @@ class RespectfulRequester:
     def __init__(self):
         self.need_decode = True
 
-        if type(config["redis"]) == redis.client.Redis:
+        if type(config["redis"]) == Redis:
             self.redis = config["redis"]
             self.need_decode = not self.redis.connection_pool.connection_kwargs['decode_responses']
         else:
