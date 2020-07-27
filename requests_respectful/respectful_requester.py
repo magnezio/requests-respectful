@@ -22,13 +22,13 @@ class RespectfulRequester:
         if type(config["redis"]) == Redis:
             self.redis = config["redis"]
             self.need_decode = not self.redis.connection_pool.connection_kwargs['decode_responses']
-            self.redis_db = self.redis.connection_pool.connection_kwargs['db']
+            self.redis_db = int(self.redis.connection_pool.connection_kwargs['db'])
         else:
             self.redis = StrictRedis(
                 host=config["redis"]["host"],
                 port=config["redis"]["port"],
                 db=config["redis"]["database"])
-            self.redis_db = config["redis"]["database"]
+            self.redis_db = int(config["redis"]["database"])
 
         try:
             self.redis.echo("Testing Connection")
