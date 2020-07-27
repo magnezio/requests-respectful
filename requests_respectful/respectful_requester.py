@@ -2,6 +2,7 @@ from .globals import default_config, config
 from .exceptions import RequestsRespectfulError, RequestsRespectfulConfigError, RequestsRespectfulRateLimitedError, RequestsRespectfulRedisError, RequestsRespectfulWaitMaxRetriesExceeded
 
 from redis import StrictRedis, ConnectionError
+from redis.client import Redis
 
 import uuid
 import inspect
