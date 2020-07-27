@@ -17,15 +17,18 @@ class RespectfulRequester:
 
     def __init__(self):
         self.need_decode = True
+        self.redis_db = 0
 
         if type(config["redis"]) == Redis:
             self.redis = config["redis"]
             self.need_decode = not self.redis.connection_pool.connection_kwargs['decode_responses']
+            self.redis_db = self.redis.connection_pool.connection_kwargs['db']
         else:
             self.redis = StrictRedis(
                 host=config["redis"]["host"],
                 port=config["redis"]["port"],
                 db=config["redis"]["database"])
+            self.redis_db = config["redis"]["database"]
 
         try:
             self.redis.echo("Testing Connection")
@@ -208,7 +211,7 @@ class RespectfulRequester:
         )
 
     def _redis_keys_in_db(self):
-        return self.redis.info().get("db%d" % config["redis"]["database"]).get("keys")
+        return self.redis.info().get("db%d" % self.redis_db).get("keys")
 
     def _can_perform_request(self, realm):
         return self._requests_in_timespan(realm) < (self.realm_max_requests(realm) - config["safety_threshold"])
